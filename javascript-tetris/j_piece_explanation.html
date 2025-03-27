@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J-Piece Code Origin Explanation</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #3498db;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        .piece-visualization {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        .rotation {
+            text-align: center;
+            margin: 10px;
+        }
+        .rotation-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .piece-canvas {
+            border: 1px solid #ddd;
+            background-color: #f8f8f8;
+            margin: 0 auto;
+            display: block;
+        }
+        .code-explanation {
+            background-color: #f8f8f8;
+            padding: 20px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+        }
+        .binary-grid {
+            font-family: monospace;
+            margin: 20px 0;
+            display: inline-block;
+        }
+        .binary-row {
+            display: flex;
+            justify-content: center;
+        }
+        .binary-cell {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            margin: 2px;
+            font-weight: bold;
+        }
+        .filled {
+            background-color: blue;
+            color: white;
+        }
+        .empty {
+            background-color: white;
+        }
+        .code-block {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        .highlight {
+            background-color: #ffeb3b;
+            padding: 2px 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Understanding the J-Piece Code Origin</h1>
+
+        <p>
+            In Tetris, the J-piece is one of the seven standard tetriminos. It consists of four blocks arranged in an 'J' shape.
+            In the code, this piece is represented using hexadecimal values that encode its shape in different rotations.
+        </p>
+
+        <div class="code-block">
+            const j = { name: 'J', size: 3, blocks: [0x44C0, 0x8E00, 0x6440, 0x0E20], color: 'blue' };
+        </div>
+
+        <p>
+            Let's break down how these hexadecimal values (0x44C0, 0x8E00, 0x6440, 0x0E20) represent the J-piece in its four possible rotations.
+        </p>
+
+        <h2>Understanding the Hexadecimal Representation</h2>
+
+        <p>
+            In the Tetris code, each piece is represented within a 4x4 grid using a 16-bit integer (represented in hexadecimal).
+            Each bit in this 16-bit number corresponds to a cell in the 4x4 grid, starting from the top-left and moving right and down.
+        </p>
+
+        <p>
+            For example, the first rotation of the J-piece is represented by <span class="highlight">0x44C0</span>. Let's convert this to binary and see how it maps to the grid:
+        </p>
+
+        <div class="code-explanation">
+            <p><strong>0x44C0 in binary is: 0100 0100 1100 0000</strong></p>
+
+            <div class="binary-grid">
+                <div class="binary-row">
+                    <div class="binary-cell empty">0</div>
+                    <div class="binary-cell filled">1</div>
+                    <div class="binary-cell empty">0</div>
+                    <div class="binary-cell empty">0</div>
+                </div>
+                <div class="binary-row">
+                    <div class="binary-cell empty">0</div>
+                    <div class="binary-cell filled">1</div>
+                    <div class="binary-cell empty">0</div>
+                    <div class="binary-cell empty">0</div>
+                </div>
+                <div class="binary-row">
+                    <div class="binary-cell filled">1</div>
+                    <div class="binary-cell filled">1</div>
+                    <div class="binary-cell empty">0</div>
+                    <div class="binary-cell empty">0</div>
+                </div>
+                <div class="binary-row">
+                    <div class="binary-cell empty">0</div>
+                    <div class="binary-cell empty">0</div>
+                    <div class="binary-cell empty">0</div>
+                    <div class="binary-cell empty">0</div>
+                </div>
+            </div>
+
+            <p>
+                Reading from left to right, top to bottom, the 1s represent filled cells (blocks) and 0s represent empty cells.
+                This creates the J-shape in its first rotation.
+            </p>
+        </div>
+
+        <h2>Bit Manipulation in the Code</h2>
+
+        <p>
+            The game uses bit manipulation to check which cells in the 4x4 grid are occupied by the piece. Here's how it works:
+        </p>
+
+        <div class="code-block">
+function eachblock(type, x, y, dir, fn) {
+    var bit, row = 0, col = 0, blocks = type.blocks[dir];
+    for(bit = 0x8000 ; bit > 0 ; bit = bit >> 1) {
+        if (blocks & bit) {
+            fn(x + col, y + row);
+        }
+        if (++col === 4) {
+            col = 0;
+            ++row;
+        }
+    }
+}
+        </div>
+
+        <p>
+            This function iterates through each bit in the 16-bit representation of the piece:
+        </p>
+
+        <ol>
+            <li>It starts with <code>bit = 0x8000</code> (binary: 1000 0000 0000 0000), which represents the top-left cell.</li>
+            <li>For each iteration, it checks if the corresponding bit in the piece's representation is set using <code>blocks & bit</code>.</li>
+            <li>If the bit is set (equals 1), it calls the provided function with the current position.</li>
+            <li>It then shifts the bit right by 1 (<code>bit = bit >> 1</code>) to move to the next cell.</li>
+            <li>When it reaches the end of a row (<code>col === 4</code>), it resets the column and increments the row.</li>
+        </ol>
+
+        <h2>All Four Rotations of the J-Piece</h2>
+
+        <p>The J-piece has four possible rotations, each represented by a different hexadecimal value:</p>
+
+        <ul>
+            <li><strong>Rotation 0 (0x44C0)</strong>: The classic J-shape with a vertical line of three blocks and one block extending to the right at the bottom.</li>
+            <li><strong>Rotation 1 (0x8E00)</strong>: The J-piece rotated 90° clockwise, with one block on top and three blocks in a row below it.</li>
+            <li><strong>Rotation 2 (0x6440)</strong>: The J-piece rotated 180°, with a vertical line of three blocks and one block extending to the left at the top.</li>
+            <li><strong>Rotation 3 (0x0E20)</strong>: The J-piece rotated 270° clockwise, with three blocks in a row and one block extending down from the right end.</li>
+        </ul>
+
+        <p>
+            These rotations allow the J-piece to fit into different spaces on the game board, making Tetris a versatile and challenging puzzle game.
+        </p>
+
+        <script>
+            // J-piece definition
+            const j = { name: 'J', size: 3, blocks: [0x44C0, 0x8E00, 0x6440, 0x0E20], color: 'blue' };
+
+            // Add dynamic visualization for the J-piece
+            window.onload = function() {
+                // Helper function to iterate through each block of a piece
+                function eachblock(type, x, y, dir, fn) {
+                    var bit, row = 0, col = 0, blocks = type.blocks[dir];
+                    for(bit = 0x8000 ; bit > 0 ; bit = bit >> 1) {
+                        if (blocks & bit) {
+                            fn(x + col, y + row);
+                        }
+                        if (++col === 4) {
+                            col = 0;
+                            ++row;
+                        }
+                    }
+                }
+
+                // Function to draw a piece on a canvas
+                function drawPiece(ctx, type, x, y, dir, blockSize) {
+                    // Clear canvas with light gray background
+                    ctx.fillStyle = '#f8f8f8';
+                    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+                    // Draw grid lines
+                    ctx.strokeStyle = '#ddd';
+                    ctx.lineWidth = 0.5;
+                    for (let i = 0; i <= 4; i++) {
+                        // Vertical lines
+                        ctx.beginPath();
+                        ctx.moveTo(i * blockSize, 0);
+                        ctx.lineTo(i * blockSize, 4 * blockSize);
+                        ctx.stroke();
+
+                        // Horizontal lines
+                        ctx.beginPath();
+                        ctx.moveTo(0, i * blockSize);
+                        ctx.lineTo(4 * blockSize, i * blockSize);
+                        ctx.stroke();
+                    }
+
+                    // Draw the piece blocks
+                    eachblock(type, x, y, dir, function(x, y) {
+                        drawBlock(ctx, x, y, type.color, blockSize);
+                    });
+                }
+
+                // Function to draw a block
+                function drawBlock(ctx, x, y, color, blockSize) {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
+                }
+
+                // Create visualization section
+                const visualizationDiv = document.getElementById('piece-visualization');
+
+                // Add all 4 rotations
+                for (let dir = 0; dir < 4; dir++) {
+                    const rotationDiv = document.createElement('div');
+                    rotationDiv.className = 'rotation';
+
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'rotation-title';
+                    titleDiv.textContent = `Rotation ${dir}: 0x${j.blocks[dir].toString(16).toUpperCase()}`;
+                    rotationDiv.appendChild(titleDiv);
+
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'piece-canvas';
+                    canvas.width = 4 * 25;  // 4x4 grid with 25px blocks
+                    canvas.height = 4 * 25;
+                    const ctx = canvas.getContext('2d');
+                    drawPiece(ctx, j, 0, 0, dir, 25);
+                    rotationDiv.appendChild(canvas);
+
+                    visualizationDiv.appendChild(rotationDiv);
+                }
+            };
+        </script>
+    </div>
+</body>
+</html>

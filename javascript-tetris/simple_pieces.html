@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Pieces and their Codes</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .pieces-table {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        .pieces-table th {
+            background-color: #f2f2f2;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+        }
+        .pieces-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        .piece-canvas {
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tetris Pieces</h1>
+    
+    <table class="pieces-table">
+        <thead>
+            <tr>
+                <th style="text-align: center">Piece</th>
+                <th>Name and 16-bit Code</th>
+            </tr>
+        </thead>
+        <tbody id="pieces-container">
+            <!-- Pieces will be added here dynamically -->
+        </tbody>
+    </table>
+
+    <script>
+        // Tetris pieces definitions from game.js
+        const i = { name: 'I', size: 4, blocks: [0x0F00, 0x2222, 0x00F0, 0x4444], color: 'cyan' };
+        const j = { name: 'J', size: 3, blocks: [0x44C0, 0x8E00, 0x6440, 0x0E20], color: 'blue' };
+        const l = { name: 'L', size: 3, blocks: [0x4460, 0x0E80, 0xC440, 0x2E00], color: 'orange' };
+        const o = { name: 'O', size: 2, blocks: [0xCC00, 0xCC00, 0xCC00, 0xCC00], color: 'yellow' };
+        const s = { name: 'S', size: 3, blocks: [0x06C0, 0x8C40, 0x6C00, 0x4620], color: 'green' };
+        const t = { name: 'T', size: 3, blocks: [0x0E40, 0x4C40, 0x4E00, 0x4640], color: 'purple' };
+        const z = { name: 'Z', size: 3, blocks: [0x0C60, 0x4C80, 0xC600, 0x2640], color: 'red' };
+
+        // All pieces array
+        const pieces = [i, j, l, o, s, t, z];
+
+        // Helper function to iterate through each block of a piece
+        function eachblock(type, x, y, dir, fn) {
+            var bit, row = 0, col = 0, blocks = type.blocks[dir];
+            for(bit = 0x8000 ; bit > 0 ; bit = bit >> 1) {
+                if (blocks & bit) {
+                    fn(x + col, y + row);
+                }
+                if (++col === 4) {
+                    col = 0;
+                    ++row;
+                }
+            }
+        }
+
+        // Function to draw a piece on a canvas
+        function drawPiece(ctx, type, x, y, dir, blockSize) {
+            // Clear canvas with light gray background
+            ctx.fillStyle = '#f8f8f8';
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 4; i++) {
+                // Vertical lines
+                ctx.beginPath();
+                ctx.moveTo(i * blockSize, 0);
+                ctx.lineTo(i * blockSize, 4 * blockSize);
+                ctx.stroke();
+                
+                // Horizontal lines
+                ctx.beginPath();
+                ctx.moveTo(0, i * blockSize);
+                ctx.lineTo(4 * blockSize, i * blockSize);
+                ctx.stroke();
+            }
+            
+            // Draw the piece blocks
+            eachblock(type, x, y, dir, function(x, y) {
+                drawBlock(ctx, x, y, type.color, blockSize);
+            });
+        }
+
+        // Function to draw a block
+        function drawBlock(ctx, x, y, color, blockSize) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
+        }
+
+        // Function to add a piece row to the table
+        function addPieceRow(piece) {
+            const container = document.getElementById('pieces-container');
+            const row = document.createElement('tr');
+            
+            // First column - Canvas with piece visualization
+            const tdCanvas = document.createElement('td');
+            const canvas = document.createElement('canvas');
+            canvas.className = 'piece-canvas';
+            canvas.width = 4 * 20;  // Always use 4x4 grid
+            canvas.height = 4 * 20;
+            const ctx = canvas.getContext('2d');
+            drawPiece(ctx, piece, 0, 0, 0, 20);  // Only show first rotation (0)
+            tdCanvas.appendChild(canvas);
+            row.appendChild(tdCanvas);
+            
+            // Second column - Name and 16-bit code
+            const tdInfo = document.createElement('td');
+            tdInfo.innerHTML = `<strong>${piece.name}-piece</strong><br>Code: 0x${piece.blocks[0].toString(16).toUpperCase()}`;
+            row.appendChild(tdInfo);
+            
+            container.appendChild(row);
+        }
+
+        // Initialize the page
+        function init() {
+            pieces.forEach(piece => {
+                addPieceRow(piece);
+            });
+        }
+
+        // Initialize when the page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
