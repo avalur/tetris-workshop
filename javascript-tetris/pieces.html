@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Pieces Visualization</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .pieces-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+        }
+        .piece-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .piece-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        .piece-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .piece-canvas {
+            margin: 0 auto;
+            display: block;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+        }
+        .rotations {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        .rotations-title {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+        .rotation-canvas {
+            border: 1px solid #ddd;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .piece-info {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .piece-description {
+            margin-top: 15px;
+            font-size: 0.9em;
+            line-height: 1.5;
+            text-align: left;
+            color: #444;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #ddd;
+        }
+        .intro {
+            margin-bottom: 30px;
+            line-height: 1.6;
+            background-color: #f0f8ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid #4682b4;
+        }
+        .intro p {
+            margin: 10px 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #777;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tetris Pieces Visualization</h1>
+
+        <div class="intro">
+            <p>Tetris is a classic puzzle game where players arrange falling pieces, called Tetriminos, to create complete horizontal lines.
+            Each Tetrimino is made up of four square blocks arranged in different configurations. There are seven standard Tetriminos,
+            each with a unique shape and color, as shown below.</p>
+            <p>Each piece can be rotated in four different ways (though some pieces like the O piece look the same in all rotations).
+            Understanding the shape and rotation of each piece is essential for mastering Tetris.</p>
+        </div>
+
+        <div class="pieces-container" id="pieces-container">
+            <!-- Pieces will be dynamically added here -->
+        </div>
+
+        <footer>
+            <p>Created for Tetris Workshop - A visual guide to all standard Tetris pieces</p>
+        </footer>
+    </div>
+
+    <script>
+        // Tetris pieces definitions with descriptions
+        const i = {
+            name: 'I',
+            size: 4,
+            blocks: [0x0F00, 0x2222, 0x00F0, 0x4444],
+            color: 'cyan',
+            description: 'The I-piece is a straight tetrimino that can clear multiple lines at once. It\'s essential for performing a "Tetris" (clearing 4 lines simultaneously).'
+        };
+        const j = {
+            name: 'J',
+            size: 3,
+            blocks: [0x44C0, 0x8E00, 0x6440, 0x0E20],
+            color: 'blue',
+            description: 'The J-piece has a main body with an appendage pointing left. It\'s useful for filling T-shaped holes and can be used for T-spins when properly positioned.'
+        };
+        const l = {
+            name: 'L',
+            size: 3,
+            blocks: [0x4460, 0x0E80, 0xC440, 0x2E00],
+            color: 'orange',
+            description: 'The L-piece is the mirror image of the J-piece, with its appendage pointing right. It complements the J-piece in filling various gaps.'
+        };
+        const o = {
+            name: 'O',
+            size: 2,
+            blocks: [0xCC00, 0xCC00, 0xCC00, 0xCC00],
+            color: 'yellow',
+            description: 'The O-piece is a 2×2 square that doesn\'t change shape when rotated. It\'s the most stable piece and useful for filling corners and edges.'
+        };
+        const s = {
+            name: 'S',
+            size: 3,
+            blocks: [0x06C0, 0x8C40, 0x6C00, 0x4620],
+            color: 'green',
+            description: 'The S-piece has a zigzag shape that can be challenging to place. It\'s useful for creating overhangs and filling specific gaps.'
+        };
+        const t = {
+            name: 'T',
+            size: 3,
+            blocks: [0x0E40, 0x4C40, 0x4E00, 0x4640],
+            color: 'purple',
+            description: 'The T-piece is versatile and can be used for T-spins, a advanced technique that scores bonus points. It\'s shaped like the letter T and can fit in many different spaces.'
+        };
+        const z = {
+            name: 'Z',
+            size: 3,
+            blocks: [0x0C60, 0x4C80, 0xC600, 0x2640],
+            color: 'red',
+            description: 'The Z-piece is the mirror image of the S-piece. Like the S-piece, it can be tricky to place but is valuable for creating specific structures and overhangs.'
+        };
+
+        // All pieces array
+        const pieces = [i, j, l, o, s, t, z];
+
+        // Helper function to iterate through each block of a piece
+        function eachblock(type, x, y, dir, fn) {
+            var bit, row = 0, col = 0, blocks = type.blocks[dir];
+            for(bit = 0x8000 ; bit > 0 ; bit = bit >> 1) {
+                if (blocks & bit) {
+                    fn(x + col, y + row);
+                }
+                if (++col === 4) {
+                    col = 0;
+                    ++row;
+                }
+            }
+        }
+
+        // Function to draw a piece on a canvas
+        function drawPiece(ctx, type, x, y, dir, blockSize) {
+            eachblock(type, x, y, dir, function(x, y) {
+                drawBlock(ctx, x, y, type.color, blockSize);
+            });
+        }
+
+        // Function to draw a block
+        function drawBlock(ctx, x, y, color, blockSize) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
+            ctx.strokeStyle = '#000';
+            ctx.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
+        }
+
+        // Function to create a piece card
+        function createPieceCard(piece) {
+            const card = document.createElement('div');
+            card.className = 'piece-card';
+
+            // Add piece name
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'piece-name';
+            nameDiv.style.color = piece.color;
+            nameDiv.textContent = piece.name + ' Piece';
+            card.appendChild(nameDiv);
+
+            // Add main piece canvas (first rotation)
+            const mainCanvas = document.createElement('canvas');
+            mainCanvas.className = 'piece-canvas';
+            mainCanvas.width = piece.size * 30;
+            mainCanvas.height = piece.size * 30;
+            const mainCtx = mainCanvas.getContext('2d');
+            drawPiece(mainCtx, piece, 0, 0, 0, 30);
+            card.appendChild(mainCanvas);
+
+            // Add rotations section
+            const rotationsTitle = document.createElement('div');
+            rotationsTitle.className = 'rotations-title';
+            rotationsTitle.textContent = 'All Rotations (0°, 90°, 180°, 270°)';
+            card.appendChild(rotationsTitle);
+
+            const rotationsDiv = document.createElement('div');
+            rotationsDiv.className = 'rotations';
+
+            // Add all 4 rotations
+            for (let dir = 0; dir < 4; dir++) {
+                const rotCanvas = document.createElement('canvas');
+                rotCanvas.className = 'rotation-canvas';
+                rotCanvas.width = piece.size * 15;
+                rotCanvas.height = piece.size * 15;
+                const rotCtx = rotCanvas.getContext('2d');
+                drawPiece(rotCtx, piece, 0, 0, dir, 15);
+                rotationsDiv.appendChild(rotCanvas);
+            }
+
+            card.appendChild(rotationsDiv);
+
+            // Add piece info
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'piece-info';
+            infoDiv.innerHTML = `Size: ${piece.size}x${piece.size} • Color: ${piece.color}`;
+            card.appendChild(infoDiv);
+
+            // Add piece description
+            const descDiv = document.createElement('div');
+            descDiv.className = 'piece-description';
+            descDiv.textContent = piece.description;
+            card.appendChild(descDiv);
+
+            return card;
+        }
+
+        // Function to initialize the page
+        function init() {
+            const container = document.getElementById('pieces-container');
+
+            // Create a card for each piece
+            pieces.forEach(piece => {
+                const card = createPieceCard(piece);
+                container.appendChild(card);
+            });
+        }
+
+        // Initialize when the page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
