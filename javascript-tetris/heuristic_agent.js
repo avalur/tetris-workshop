@@ -7,8 +7,8 @@ function evaluateBoard(board) {
     let columnHeights = new Array(nx).fill(0);
 
     // Calculate aggregate height and column heights
-    for (let y = 0; y < ny; y++) {
-        for (let x = 0; x < nx; x++) {
+    for (let x = 0; x < nx; x++) {
+        for (let y = 0; y < ny; y++) {
             if (board[x][y] !== 0) {
                 columnHeights[x] = ny - y;
                 aggregateHeight += columnHeights[x];

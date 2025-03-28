@@ -326,7 +326,7 @@
         var x, y;
         for(y = n ; y >= 0 ; --y) {
             for(x = 0 ; x < nx ; ++x)
-                setBlock(x, y, (y == 0) ? null : getBlock(x, y-1));
+                setBlock(x, y, (y == 0) ? 0 : getBlock(x, y-1));
         }
     }
 
@@ -411,6 +411,7 @@
 
     function agent() {
         let bestMove = selectBestMove(current);
+        printBoardState(blocks);
         if (bestMove) {
             let dropY = getDropPosition(bestMove.piece, bestMove.x);
             current.x = bestMove.x;
