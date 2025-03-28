@@ -66,19 +66,27 @@ function copyBlocks(blocks) {
 // Generate all possible moves for the current piece
 function getPossibleMoves(piece) {
     let moves = [];
+    const rotations = [0, 1, 2, 3];
+
     // For each rotation of the piece
-    for (let dir = 0; dir < 4; dir++) {
-        piece.dir = dir;
-        // For each horizontal position
-        for (let x = 0; x < nx - piece.type.size; x++) {
-            let y = getDropPosition(piece, x);
-            let new_blocks = copyBlocks(blocks);
-            eachblock(piece.type, x, y, piece.dir, function(x, y) {
-                new_blocks[x][y] = piece.type;
-            });
-            moves.push({piece: piece, x: x, y: y, board: new_blocks});
-        }
-    }
+    rotations.forEach(dir => {
+         // Create a deep copy of the piece to avoid side effects
+         let rotatedPiece = { ...piece, dir };
+
+         // For each horizontal position with shifts
+         let xs = [...Array(nx + 3).keys()].map(i => i - 3);
+         xs.forEach(x => {
+             let y = getDropPosition(rotatedPiece, x);
+             if (!occupied(rotatedPiece.type, x, y, dir)) {
+                 let new_blocks = copyBlocks(blocks);
+                 eachblock(rotatedPiece.type, x, y, rotatedPiece.dir, function(x, y) {
+                     new_blocks[x][y] = rotatedPiece.type;
+                 });
+                 moves.push({ piece: rotatedPiece, x: x, y: y, board: new_blocks });
+             }
+         })
+    });
+
     return moves;
 }
 
