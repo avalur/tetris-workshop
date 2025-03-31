@@ -411,7 +411,6 @@
 
     function agent() {
         let bestMove = selectBestMove(current);
-        printBoardState(blocks);
         if (bestMove) {
             let dropY = getDropPosition(bestMove.piece, bestMove.x);
             current.x = bestMove.x;

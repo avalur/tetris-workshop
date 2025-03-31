@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Heuristic Features Visualization</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .visualization-container { display: flex; flex-wrap: wrap; justify-content: space-around; }
+        .board-canvas { border: 2px solid #333; margin: 0 auto; display: block; }
+        .feature-card { background-color: #f8f8f8; padding: 15px; margin-bottom: 15px; border-left: 4px solid #3498db; }
+        .feature-value { font-size: 24px; font-weight: bold; color: #2c3e50; }
+        button { background-color: #3498db; color: white; border: none; padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tetris Heuristic Features Visualization</h1>
+
+        <div class="controls">
+            <button id="randomize-btn">Randomize Board</button>
+            <button id="clear-btn">Clear Board</button>
+            <button id="example1-btn">Example 1</button>
+            <button id="example2-btn">Example 2</button>
+        </div>
+
+        <div class="visualization-container">
+            <div class="board-container">
+                <h3>Tetris Board Example</h3>
+                <canvas id="board-canvas" class="board-canvas" width="300" height="600"></canvas>
+            </div>
+
+            <div class="features-container">
+                <h3>Heuristic Features</h3>
+
+                <div class="feature-card">
+                    <h4>Aggregate Height</h4>
+                    <div class="feature-value" id="aggregate-height-value">0</div>
+                    <div>Sum of the heights of all columns.</div>
+                </div>
+
+                <div class="feature-card">
+                    <h4>Complete Lines</h4>
+                    <div class="feature-value" id="complete-lines-value">0</div>
+                    <div>Number of complete horizontal lines.</div>
+                </div>
+
+                <div class="feature-card">
+                    <h4>Holes</h4>
+                    <div class="feature-value" id="holes-value">0</div>
+                    <div>Empty cells with at least one block above them.</div>
+                </div>
+
+                <div class="feature-card">
+                    <h4>Bumpiness</h4>
+                    <div class="feature-value" id="bumpiness-value">0</div>
+                    <div>Sum of absolute differences between adjacent column heights.</div>
+                </div>
+
+                <div class="feature-card">
+                    <h4>Heuristic Score</h4>
+                    <div class="feature-value" id="heuristic-score-value">0</div>
+                    <div>-0.51 * aggregateHeight + 0.76 * completeLines - 0.36 * holes - 0.18 * bumpiness</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const nx = 10; // Board width
+        const ny = 20; // Board height
+        const blockSize = 30; // Size of each block in pixels
+
+        // Tetris piece colors from game.js
+        const pieceColors = ['cyan', 'blue', 'orange', 'yellow', 'green', 'purple', 'red'];
+
+        // Tetris pieces definitions
+        const i = {
+            name: 'I',
+            size: 4,
+            blocks: [0x0F00, 0x2222, 0x00F0, 0x4444],
+            color: 'cyan'
+        };
+        const j = {
+            name: 'J',
+            size: 3,
+            blocks: [0x44C0, 0x8E00, 0x6440, 0x0E20],
+            color: 'blue'
+        };
+        const l = {
+            name: 'L',
+            size: 3,
+            blocks: [0x4460, 0x0E80, 0xC440, 0x2E00],
+            color: 'orange'
+        };
+        const o = {
+            name: 'O',
+            size: 2,
+            blocks: [0xCC00, 0xCC00, 0xCC00, 0xCC00],
+            color: 'yellow'
+        };
+        const s = {
+            name: 'S',
+            size: 3,
+            blocks: [0x06C0, 0x8C40, 0x6C00, 0x4620],
+            color: 'green'
+        };
+        const t = {
+            name: 'T',
+            size: 3,
+            blocks: [0x0E40, 0x4C40, 0x4E00, 0x4640],
+            color: 'purple'
+        };
+        const z = {
+            name: 'Z',
+            size: 3,
+            blocks: [0x0C60, 0x4C80, 0xC600, 0x2640],
+            color: 'red'
+        };
+
+        // All pieces array
+        const pieces = [i, j, l, o, s, t, z];
+
+        // Helper function to iterate through each block of a piece
+        function eachblock(type, x, y, dir, fn) {
+            var bit, row = 0, col = 0, blocks = type.blocks[dir];
+            for(bit = 0x8000 ; bit > 0 ; bit = bit >> 1) {
+                if (blocks & bit) {
+                    fn(x + col, y + row);
+                }
+                if (++col === 4) {
+                    col = 0;
+                    ++row;
+                }
+            }
+        }
+
+        // Function to place a piece on the board
+        function placePiece(board, type, x, y, dir) {
+            eachblock(type, x, y, dir, function(x, y) {
+                if (x >= 0 && x < nx && y >= 0 && y < ny) {
+                    board[x][y] = type.color;
+                }
+            });
+        }
+
+        // Initialize an empty board
+        let board = Array(nx).fill().map(() => Array(ny).fill(0));
+
+        // DOM elements
+        const boardCanvas = document.getElementById('board-canvas');
+        const ctx = boardCanvas.getContext('2d');
+
+        // Feature value elements
+        const aggregateHeightValue = document.getElementById('aggregate-height-value');
+        const completeLinesValue = document.getElementById('complete-lines-value');
+        const holesValue = document.getElementById('holes-value');
+        const bumpinessValue = document.getElementById('bumpiness-value');
+        const heuristicScoreValue = document.getElementById('heuristic-score-value');
+
+        // Function to draw a block
+        function drawBlock(ctx, x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x * blockSize, y * blockSize, blockSize, blockSize);
+        }
+
+        // Function to evaluate the board and calculate features
+        function evaluateBoard(board) {
+            let aggregateHeight = 0;
+            let completeLines = 0;
+            let holes = 0;
+            let bumpiness = 0;
+            let columnHeights = new Array(nx).fill(0);
+            let holePositions = [];
+            let completeLineIndices = [];
+
+            // Calculate column heights and aggregate height
+            for (let x = 0; x < nx; x++) {
+                for (let y = 0; y < ny; y++) {
+                    if (board[x][y] !== 0) {
+                        columnHeights[x] = ny - y;
+                        aggregateHeight += columnHeights[x];
+                        break;
+                    }
+                }
+            }
+
+            // Calculate complete lines
+            for (let y = 0; y < ny; y++) {
+                let complete = true;
+                for (let x = 0; x < nx; x++) {
+                    if (board[x][y] === 0) {
+                        complete = false;
+                        break;
+                    }
+                }
+                if (complete) {
+                    completeLines++;
+                    completeLineIndices.push(y);
+                }
+            }
+
+            // Calculate holes
+            for (let x = 0; x < nx; x++) {
+                let blockFound = false;
+                for (let y = 0; y < ny; y++) {
+                    if (board[x][y] !== 0) {
+                        blockFound = true;
+                    } else if (blockFound && board[x][y] === 0) {
+                        holes++;
+                        holePositions.push({x, y});
+                    }
+                }
+            }
+
+            // Calculate bumpiness
+            for (let x = 0; x < nx - 1; x++) {
+                bumpiness += Math.abs(columnHeights[x] - columnHeights[x + 1]);
+            }
+
+            // Calculate heuristic score
+            const heuristicScore = -0.51 * aggregateHeight + 0.76 * completeLines - 0.36 * holes - 0.18 * bumpiness;
+
+            return {
+                aggregateHeight,
+                completeLines,
+                holes,
+                bumpiness,
+                heuristicScore,
+                columnHeights,
+                holePositions,
+                completeLineIndices
+            };
+        }
+
+        // Function to draw the board
+        function drawBoard() {
+            // Clear canvas
+            ctx.fillStyle = '#f8f8f8';
+            ctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
+
+            // Draw grid lines
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 0.5;
+
+            // Vertical lines
+            for (let x = 0; x <= nx; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * blockSize, 0);
+                ctx.lineTo(x * blockSize, ny * blockSize);
+                ctx.stroke();
+            }
+
+            // Horizontal lines
+            for (let y = 0; y <= ny; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * blockSize);
+                ctx.lineTo(nx * blockSize, y * blockSize);
+                ctx.stroke();
+            }
+
+            // Calculate features
+            const features = evaluateBoard(board);
+
+            // Highlight complete lines
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+            for (let y of features.completeLineIndices) {
+                ctx.fillRect(0, y * blockSize, nx * blockSize, blockSize);
+            }
+
+            // Draw blocks
+            for (let x = 0; x < nx; x++) {
+                for (let y = 0; y < ny; y++) {
+                    if (board[x][y] !== 0) {
+                        drawBlock(ctx, x, y, board[x][y]);
+                    }
+                }
+            }
+
+            // Highlight holes
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+            for (let hole of features.holePositions) {
+                ctx.fillRect(hole.x * blockSize, hole.y * blockSize, blockSize, blockSize);
+            }
+
+            // Update feature values
+            aggregateHeightValue.textContent = features.aggregateHeight;
+            completeLinesValue.textContent = features.completeLines;
+            holesValue.textContent = features.holes;
+            bumpinessValue.textContent = features.bumpiness;
+            heuristicScoreValue.textContent = features.heuristicScore.toFixed(2);
+        }
+
+        // Function to randomize the board
+        function randomizeBoard() {
+            for (let x = 0; x < nx; x++) {
+                for (let y = 0; y < ny; y++) {
+                    // Higher chance of empty cells at the top, higher chance of filled cells at the bottom
+                    const threshold = 0.3 + (y / ny) * 0.4;
+                    if (Math.random() < threshold) {
+                        // Assign a random piece color
+                        const randomColorIndex = Math.floor(Math.random() * pieceColors.length);
+                        board[x][y] = pieceColors[randomColorIndex];
+                    } else {
+                        board[x][y] = 0;
+                    }
+                }
+            }
+            drawBoard();
+        }
+
+        // Function to clear the board
+        function clearBoard() {
+            board = Array(nx).fill().map(() => Array(ny).fill(0));
+            drawBoard();
+        }
+
+        // Example 1: Board with holes and complete lines using real Tetris pieces
+        function loadExample1() {
+            clearBoard();
+
+            // Place pieces to create complete lines with some holes
+
+            // Bottom row - mostly complete with I pieces
+            placePiece(board, i, 0, ny-4, 0); // I piece horizontal at bottom
+            placePiece(board, i, 4, ny-4, 0); // I piece horizontal
+            placePiece(board, o, 8, ny-4, 0); // O piece to complete the line
+
+            // Second row from bottom - mostly complete with a hole
+            placePiece(board, l, 0, ny-3, 0); // L piece
+            placePiece(board, j, 3, ny-3, 0); // J piece
+            placePiece(board, i, 6, ny-3, 0); // I piece horizontal
+            // This leaves a hole at position (3, ny-2)
+
+            // Third row from bottom - mostly complete with a hole
+            placePiece(board, t, 0, ny-2, 0); // T piece
+            placePiece(board, s, 3, ny-2, 0); // S piece
+            placePiece(board, z, 6, ny-2, 0); // Z piece
+            // This leaves a hole at position (7, ny-1)
+
+            // Add some pieces above
+            placePiece(board, i, 0, ny-8, 1); // I piece vertical
+            placePiece(board, t, 2, ny-7, 2); // T piece rotated
+            placePiece(board, j, 5, ny-6, 3); // J piece rotated
+            placePiece(board, o, 8, ny-6, 0); // O piece
+
+            drawBoard();
+        }
+
+        // Example 2: Board with high bumpiness using real Tetris pieces
+        function loadExample2() {
+            clearBoard();
+
+            // Create a board with high bumpiness using real Tetris pieces
+
+            // Column 0-1: Medium height with O pieces
+            placePiece(board, o, 0, ny-2, 0); // O piece
+            placePiece(board, o, 0, ny-4, 0); // O piece
+
+            // Column 2-3: Tall with I piece vertical
+            placePiece(board, i, 2, ny-4, 1); // I piece vertical
+
+            // Column 4-5: Short with Z piece
+            placePiece(board, z, 4, ny-1, 0); // Z piece
+
+            // Column 6: Medium-tall with J piece
+            placePiece(board, j, 6, ny-3, 1); // J piece vertical
+
+            // Column 7-8: Medium with L and T pieces
+            placePiece(board, l, 7, ny-2, 2); // L piece rotated
+            placePiece(board, t, 7, ny-4, 3); // T piece rotated
+
+            // Column 9: Short with S piece
+            placePiece(board, s, 8, ny-1, 2); // S piece rotated
+
+            drawBoard();
+        }
+
+        // Add event listeners to buttons
+        document.getElementById('randomize-btn').addEventListener('click', randomizeBoard);
+        document.getElementById('clear-btn').addEventListener('click', clearBoard);
+        document.getElementById('example1-btn').addEventListener('click', loadExample1);
+        document.getElementById('example2-btn').addEventListener('click', loadExample2);
+
+        // Initialize the board
+        drawBoard();
+    </script>
+</body>
+</html>
