@@ -64,9 +64,10 @@ function copyBlocks(blocks) {
 }
 
 // Generate all possible moves for the current piece
-function getPossibleMoves(piece) {
+function getPossibleMoves(piece, boardState) {
     let moves = [];
     const rotations = [0, 1, 2, 3];
+    let currentState = boardState || blocks;
 
     // For each rotation of the piece
     rotations.forEach(dir => {
@@ -76,9 +77,9 @@ function getPossibleMoves(piece) {
          // For each horizontal position with shifts
          let xs = [...Array(nx + 3).keys()].map(i => i - 3);
          xs.forEach(x => {
-             let y = getDropPosition(rotatedPiece, x);
-             if (!occupied(rotatedPiece.type, x, y, dir)) {
-                 let new_blocks = copyBlocks(blocks);
+             let y = getDropPosition(rotatedPiece, x, currentState);
+             if (!occupied(rotatedPiece.type, x, y, dir, currentState)) {
+                 let new_blocks = copyBlocks(currentState);
                  eachblock(rotatedPiece.type, x, y, rotatedPiece.dir, function(x, y) {
                      new_blocks[x][y] = rotatedPiece.type;
                  });
@@ -91,7 +92,7 @@ function getPossibleMoves(piece) {
 }
 
 // Select the best move based on heuristic evaluation
-function selectBestMove(piece, board) {
+function selectBestMoveGreedy(piece, nextPiece) {
     let moves = getPossibleMoves(piece);
     let bestMove = null;
     let bestScore = -Infinity;
@@ -105,10 +106,38 @@ function selectBestMove(piece, board) {
     return bestMove;
 }
 
+function selectBestMove(piece, nextPiece) {
+
+    let moves = []
+    for (let turn = 0; turn < 2; turn++) {
+        if (turn === 0) {
+            moves = getPossibleMoves(piece, blocks);
+            moves.forEach(move => {
+                move.father = move;
+            });
+        } else if (turn === 1) {
+            let new_moves = []
+            for (let i = 0; i < moves.length; i++) {
+                let boardAfterFirstMove = moves[i].board;
+                let new_moves_part = getPossibleMoves(nextPiece, boardAfterFirstMove);
+                new_moves_part.forEach(move => {move.father = moves[i].father;})
+                new_moves.push(...new_moves_part);
+            }
+            moves = new_moves;
+            moves.forEach(move => {
+                move.score = evaluateBoard(move.board);
+            });
+            moves.sort((a, b) => b.score - a.score);
+        }
+    }
+    return moves[0].father;
+}
+
 // Function to get the drop position of the piece
-function getDropPosition(piece, x) {
+function getDropPosition(piece, x, boardState) {
     let y = 0;
-    while (!occupied(piece.type, x, y + 1, piece.dir)) {
+    let currentState = boardState || blocks;
+    while (!occupied(piece.type, x, y + 1, piece.dir, currentState)) {
         y++;
     }
     return y;

@@ -106,17 +106,13 @@
     //-----------------------------------------------------
     // check if a piece can fit into a position in the grid
     //-----------------------------------------------------
-    function occupied(type, x, y, dir) {
+    function occupied(type, x, y, dir, board) {
         var result = false
         eachblock(type, x, y, dir, function(x, y) {
-            if ((x < 0) || (x >= nx) || (y < 0) || (y >= ny) || getBlock(x,y))
+            if ((x < 0) || (x >= nx) || (y < 0) || (y >= ny) || board[x][y])
                 result = true;
         });
         return result;
-    }
-
-    function unoccupied(type, x, y, dir) {
-        return !occupied(type, x, y, dir);
     }
 
     //-----------------------------------------
@@ -261,7 +257,7 @@
             case DIR.LEFT:  x = x - 1; break;
             case DIR.DOWN:  y = y + 1; break;
         }
-        if (unoccupied(current.type, x, y, current.dir)) {
+        if (!occupied(current.type, x, y, current.dir, blocks)) {
             current.x = x;
             current.y = y;
             invalidate();
@@ -274,7 +270,7 @@
 
     function rotate() {
         var newdir = (current.dir == DIR.MAX ? DIR.MIN : current.dir + 1);
-        if (unoccupied(current.type, current.x, current.y, newdir)) {
+        if (!occupied(current.type, current.x, current.y, newdir, blocks)) {
             current.dir = newdir;
             invalidate();
         }
@@ -288,7 +284,7 @@
             setCurrentPiece(next);
             setNextPiece(randomPiece());
             clearActions();
-            if (occupied(current.type, current.x, current.y, current.dir)) {
+            if (occupied(current.type, current.x, current.y, current.dir, blocks)) {
                 lose();
             }
         }
@@ -385,7 +381,7 @@
 
     function drawScore() {
         if (invalid.score) {
-            html('score', ("00000" + Math.floor(vscore)).slice(-5));
+            html('score', ("00000000" + Math.floor(vscore)).slice(-8));
             invalid.score = false;
         }
     }
@@ -410,7 +406,7 @@
     }
 
     function agent() {
-        let bestMove = selectBestMove(current);
+        let bestMove = selectBestMove(current, next);
         if (bestMove) {
             let dropY = getDropPosition(bestMove.piece, bestMove.x);
             current.x = bestMove.x;
