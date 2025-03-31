@@ -268,10 +268,11 @@ class Renderer:
         # Draw controls help
         controls = [
             "Controls:",
-            "← → : Move",
-            "↑ : Rotate",
-            "↓ : Drop",
+            "LEFT RIGHT: Move",
+            "UP : Rotate",
+            "DOWN : Drop",
             "P : Pause",
+            "M : On/Off AI Mode",
             "Esc : Quit"
         ]
         

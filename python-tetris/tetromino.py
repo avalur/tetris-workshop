@@ -4,7 +4,7 @@ This module defines the seven standard Tetromino pieces and their rotations.
 """
 
 # Constants for directions
-UP, RIGHT, DOWN, LEFT = 0, 1, 2, 3
+UP, RIGHT, LEFT, DOWN = 0, 1, 2, 3
 MIN_DIR, MAX_DIR = 0, 3
 
 class Tetromino:

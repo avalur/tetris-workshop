@@ -9,6 +9,7 @@ import pygame
 from game import Game
 from renderer import Renderer
 from performance import PerformanceMonitor
+from utils import AutoPlayer
 
 # Constants
 FPS = 60
@@ -25,6 +26,11 @@ def main():
 
     # Create performance monitor
     performance_monitor = PerformanceMonitor(10, 10, 120, 50, 16)
+
+    # Create auto player if AI mode is enabled
+    auto_player = None
+    if AI_MODE:
+        auto_player = AutoPlayer(game, renderer, delay=0.1)
 
     # Set up the clock for controlling frame rate
     clock = pygame.time.Clock()
@@ -44,7 +50,12 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                handle_keydown(event.key, game)
+                # Pass auto_player reference to handle_keydown
+                auto_player = handle_keydown(event.key, game, renderer, auto_player)
+
+        # Make AI move if AI mode is enabled
+        if AI_MODE and auto_player and not game.game_over and not game.paused:
+            auto_player.make_ai_move()
 
         # Update game state
         game.update(dt)
@@ -63,7 +74,7 @@ def main():
     pygame.quit()
     sys.exit()
 
-def handle_keydown(key, game):
+def handle_keydown(key, game, renderer, auto_player):
     """
     Handle keyboard input.
 
@@ -71,6 +82,8 @@ def handle_keydown(key, game):
         key (int): The key that was pressed
         game (Game): The game object
     """
+    global AI_MODE
+
     if game.game_over:
         # If game is over, only respond to space to restart
         if key == pygame.K_SPACE:
@@ -98,6 +111,16 @@ def handle_keydown(key, game):
             game.toggle_pause()
         elif key == pygame.K_ESCAPE:
             game.game_over = True
+        elif key == pygame.K_m:
+            AI_MODE = not AI_MODE
+
+    # Update auto_player based on new AI_MODE
+    if AI_MODE and auto_player is None:
+        auto_player = AutoPlayer(game, renderer, delay=0.1)
+    elif not AI_MODE:
+        auto_player = None
+
+    return auto_player
 
 if __name__ == "__main__":
     main()
